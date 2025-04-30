@@ -175,14 +175,66 @@
             renderer.render(scene, camera);
         }
 
-        async function loadFolder() {
+        function load(file) {
+            let canvasInitialized = false;
+            if (!canvasInitialized) {
+                initCanvas();
+            }
+            // Get obj file
+            var xmlhttp = new XMLHttpRequest();
+            xmlhttp.open("GET", file, false);
+            xmlhttp.send();
+            if (xmlhttp.status === 200) {
+                var fileContent = xmlhttp.responseText;
+                // Get mtl file
+                xmlhttp = new XMLHttpRequest();
+                xmlhttp.open("GET", file.substring(0, file.lastIndexOf(".")) + ".mtl", false);
+                xmlhttp.send();
+                var mtlContent = xmlhttp.responseText;
+                // 这里的 initArrays、readFile、readMtlFile、draw、drawSides 函数可以根据实际需求完善
+                initArrays();
+                readFile(fileContent);
+                readMtlFile(mtlContent);
+                draw();
+                drawSides();
+                return fileContent;
+            } else {
+                console.error('Failed to load file:', xmlhttp.statusText);
+                return null;
+            }
+        }
+
+        function initCanvas() {
+            // 这里可添加初始化画布的代码
+        }
+
+        function initArrays() {
+            // 这里可添加初始化数组的代码
+        }
+
+        function readFile(content) {
+            // 这里可添加读取文件内容的代码
+        }
+
+        function readMtlFile(content) {
+            // 这里可添加读取材质文件内容的代码
+        }
+
+        function draw() {
+            // 这里可添加绘制的代码
+        }
+
+        function drawSides() {
+            // 这里可添加绘制侧面的代码
+        }
+
+        function loadFolder() {
             errorMessage.textContent = '';
-            try {
-                const response = await fetch('/obj/'); // 假设 obj 文件夹在根目录下
-                if (!response.ok) {
-                    throw new Error('Failed to fetch folder contents');
-                }
-                const text = await response.text();
+            var xhr = new XMLHttpRequest();
+            xhr.open('GET', '/obj/', false);
+            xhr.send();
+            if (xhr.status === 200) {
+                const text = xhr.responseText;
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(text, 'text/html');
                 const links = doc.querySelectorAll('a');
@@ -198,29 +250,20 @@
                         const fileName = file.split('/').pop();
                         linkElement.textContent = fileName;
                         linkElement.href = '#';
-                        linkElement.addEventListener('click', async function (e) {
+                        linkElement.addEventListener('click', function (e) {
                             e.preventDefault();
-                            loadingContainer.style.display = 'block'; // 点击时显示加载提示
-                            loadingContainer.querySelector('#loading-status').textContent = 'Loading...'; // 显示加载中
-                            try {
-                                const response = await fetch(file);
-                                if (!response.ok) {
-                                    throw new Error('Failed to fetch file');
-                                }
-                                const fileContent = await response.text();
-                                if (!fileContent.trim()) {
-                                    throw new Error('File content is empty');
-                                }
+                            loadingContainer.style.display = 'block';
+                            loadingContainer.querySelector('#loading-status').textContent = 'Loading...';
+                            const fileContent = load(file);
+                            if (fileContent) {
                                 loadOBJ(fileContent);
-                                loadingContainer.querySelector('#loading-status').textContent = 'Loading Complete'; // 加载完成后显示完成
-                                // 3秒后自动隐藏加载提示（可根据需求调整）
+                                loadingContainer.querySelector('#loading-status').textContent = 'Loading Complete';
                                 setTimeout(() => {
                                     loadingContainer.style.display = 'none';
                                 }, 3000);
-                            } catch (error) {
-                                loadingContainer.style.display = 'none'; // 出错时隐藏加载提示
-                                errorMessage.textContent = `Error loading file: ${error.message}`;
-                                console.error('File loading error:', error);
+                            } else {
+                                loadingContainer.style.display = 'none';
+                                errorMessage.textContent = 'Error loading file';
                             }
                         });
                         listItem.appendChild(linkElement);
@@ -237,10 +280,10 @@
                 } else {
                     errorMessage.textContent = 'No files found in the folder.';
                 }
-            } catch (error) {
-                loadingContainer.style.display = 'none'; // 出错时隐藏加载提示
-                errorMessage.textContent = `Error fetching folder contents: ${error.message}`;
-                console.error('Folder loading error:', error);
+            } else {
+                loadingContainer.style.display = 'none';
+                errorMessage.textContent = `Error fetching folder contents: ${xhr.statusText}`;
+                console.error('Folder loading error:', xhr.statusText);
             }
         }
 
@@ -254,5 +297,4 @@
     </script>
 </body>
 
-</html>
-    
+</html>    
